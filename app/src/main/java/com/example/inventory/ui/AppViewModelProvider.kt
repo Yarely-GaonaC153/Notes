@@ -1,52 +1,46 @@
 package com.example.inventory.ui
 
 import android.app.Application
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.inventory.InventoryApplication
-import com.example.inventory.ui.item.NoteDetailsViewModel
-import com.example.inventory.ui.item.NoteEditViewModel
 import com.example.inventory.ui.item.NoteEntryViewModel
+import com.example.inventory.ui.item.NoteEditViewModel
+import com.example.inventory.ui.notes.NoteDetailsViewModel
 import com.example.inventory.ui.notes.NotesViewModel
 
 object AppViewModelProvider {
     val Factory = viewModelFactory {
+        initializer {
+            NoteEntryViewModel(
+                notesRepository = inventoryApplication().container.notesRepository
+            )
+        }
 
         // Inicializar NoteEditViewModel
         initializer {
             NoteEditViewModel(
-                // AGREGA ESTA LÍNEA (El orden depende de tu constructor, aquí lo pongo primero):
-                savedStateHandle = this.createSavedStateHandle(),
                 notesRepository = inventoryApplication().container.notesRepository
             )
         }
-
-        // Inicializar NoteEntryViewModel
         initializer {
-            NoteEntryViewModel(inventoryApplication().container.notesRepository)
+            NotesViewModel(
+                notesRepository = inventoryApplication().container.notesRepository
+            )
         }
-
-        // Inicializar NoteDetailsViewModel
+        // Inicializar NoteDetailsViewModel con SavedStateHandle
         initializer {
             NoteDetailsViewModel(
-                savedStateHandle = this.createSavedStateHandle(),
-                notesRepository = inventoryApplication().container.notesRepository
+                notesRepository = inventoryApplication().container.notesRepository,
+                savedStateHandle = createSavedStateHandle() // Llamada sin contexto explícito
             )
-        }
-
-        // Inicializar NotesViewModel (Pantalla principal)
-        initializer {
-            NotesViewModel(inventoryApplication().container.notesRepository)
         }
     }
 }
 
-/**
- * Función de extensión para consultar el objeto [Application] y devolver una instancia de
- * [InventoryApplication].
- */
 fun CreationExtras.inventoryApplication(): InventoryApplication =
-    (this[AndroidViewModelFactory.APPLICATION_KEY] as InventoryApplication)
+    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as InventoryApplication)

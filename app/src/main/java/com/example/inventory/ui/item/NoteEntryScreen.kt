@@ -10,10 +10,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,17 +45,14 @@ fun NoteEntryScreen(
     navigateBack: () -> Unit,
     viewModel: NoteEntryViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    // Estado del ViewModel
     val noteUiState by viewModel.noteUiState.collectAsState()
-
-    // Estados locales para los diálogos
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showMultimediaPicker by remember { mutableStateOf(false) }
     var showCameraDialog by remember { mutableStateOf(false) }
     var showAudioRecorderDialog by remember { mutableStateOf(false) }
-
-    var isReminderView by remember { mutableStateOf(false) }
+    var multimediaUris by remember { mutableStateOf<List<String>>(listOf()) }
+    var isReminderView by remember { mutableStateOf(false) } // Estado del switch
 
     Scaffold(
         topBar = {
@@ -60,7 +68,7 @@ fun NoteEntryScreen(
                     .padding(padding)
                     .verticalScroll(rememberScrollState())
             ) {
-                // Switch: Notas vs Recordatorios
+                // Botón deslizante (Switch)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -102,9 +110,9 @@ fun NoteEntryScreen(
                         .fillMaxWidth()
                 )
 
-                // Lógica de Vistas
+                // Mostrar campos adicionales si está en "Recordatorios"
                 if (isReminderView) {
-                    // --- VISTA RECORDATORIO ---
+                    // Seleccionar Fecha
                     Button(
                         onClick = { showDatePicker = true },
                         modifier = Modifier.padding(16.dp)
@@ -120,6 +128,7 @@ fun NoteEntryScreen(
                         modifier = Modifier.padding(start = 16.dp)
                     )
 
+                    // Seleccionar Hora
                     Button(
                         onClick = { showTimePicker = true },
                         modifier = Modifier.padding(16.dp)
@@ -135,114 +144,49 @@ fun NoteEntryScreen(
                         modifier = Modifier.padding(start = 16.dp)
                     )
                 } else {
-                    // --- VISTA NOTA MULTIMEDIA ---
-
-                    // Botones de acción
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                    // Botón de cámara (Solo en "Notas")
+                    Button(
+                        onClick = { showCameraDialog = true },
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Button(onClick = { showCameraDialog = true }) {
-                            Text("Camara")
-                        }
-                        Button(onClick = { showAudioRecorderDialog = true }) {
-                            Text("Audio")
-                        }
-                        Button(onClick = { showMultimediaPicker = true }) {
-                            Text("Galería")
-                        }
+                        Text("Open Camera")
                     }
 
-                    // --- LISTA DE MULTIMEDIA (LazyColumn) ---
-                    // Nota: Le ponemos altura fija para que funcione dentro del Scroll vertical principal
+                    // Botón de grabar audio (Solo en "Notas")
+                    Button(
+                        onClick = { showAudioRecorderDialog = true },
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text("Record Audio")
+                    }
+
+                    // Multimedia (Solo en "Notas")
+                    Button(
+                        onClick = { showMultimediaPicker = true },
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text("Add Multimedia")
+                    }
+
                     LazyColumn(
                         modifier = Modifier
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .height(400.dp)
+                            .padding(horizontal = 16.dp)
+                            .height(150.dp)
                     ) {
-                        val currentUris = noteUiState.noteDetails?.multimediaUris ?: emptyList()
-
-                        items(currentUris) { uriString ->
-                            val uri = Uri.parse(uriString)
-
-                            // 1. ES AUDIO
-                            if (uriString.endsWith(".mp3") || uriString.endsWith(".3gp") || uriString.endsWith(".m4a")) {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEEEEEE))
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text("Nota de voz", style = MaterialTheme.typography.labelMedium)
-                                            AudioPlayer(audioUri = uri)
-                                        }
-                                        IconButton(onClick = {
-                                            viewModel.updateMultimediaUris(currentUris - uriString)
-                                        }) {
-                                            Icon(Icons.Filled.Delete, "Borrar", tint = Color.Red)
-                                        }
-                                    }
-                                }
-                            }
-                            // 2. ES VIDEO
-                            else if (uriString.endsWith(".mp4")) {
-                                Box(modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)) {
-                                    // Usamos tu VideoPlayer de Players.kt
-                                    VideoPlayer(
-                                        videoUri = uri,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(250.dp)
-                                    )
-                                    // Botón borrar video
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.updateMultimediaUris(currentUris - uriString)
-                                        },
-                                        modifier = Modifier.align(Alignment.TopEnd)
-                                    ) {
-                                        Icon(Icons.Filled.Delete, "Borrar video", tint = Color.Red)
-                                    }
-                                }
-                            }
-                            // 3. ES IMAGEN
-                            else {
-                                Box(modifier = Modifier.fillMaxWidth()) {
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp)
-                                    ) {
-                                        Image(
-                                            painter = rememberAsyncImagePainter(model = uri),
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(200.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.updateMultimediaUris(currentUris - uriString)
-                                        },
-                                        modifier = Modifier.align(Alignment.TopEnd)
-                                    ) {
-                                        Icon(Icons.Filled.Delete, "Borrar imagen", tint = Color.Red)
-                                    }
-                                }
-                            }
+                        items(multimediaUris) { uri ->
+                            Image(
+                                painter = rememberAsyncImagePainter(model = Uri.parse(uri)),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .padding(8.dp)
+                                    .width(100.dp)
+                                    .height(150.dp)
+                            )
                         }
                     }
-                } // <--- AQUI SE CIERRA EL ELSE (Multimedia)
+                }
 
-                // --- BOTÓN GUARDAR (Ahora está fuera del if/else para que salga siempre) ---
+                // Botón Guardar
                 Button(
                     onClick = {
                         viewModel.saveNote(isReminderView)
@@ -255,12 +199,11 @@ fun NoteEntryScreen(
                 ) {
                     Text("Save ${if (isReminderView) "Reminder" else "Note"}")
                 }
-            } // Fin de Column
-        } // Fin de Scaffold content
+            }
+        }
     )
 
-    // --- DIALOGOS ---
-
+    // Dialogs
     if (showDatePicker) {
         val context = LocalContext.current
         val calendar = Calendar.getInstance()
@@ -268,6 +211,7 @@ fun NoteEntryScreen(
             context,
             { _, year, month, day ->
                 calendar.set(year, month, day)
+                Log.d("NoteEntryScreen", "Selected date: ${calendar.timeInMillis}")
                 viewModel.updateFecha(calendar.timeInMillis)
                 showDatePicker = false
             },
@@ -285,6 +229,7 @@ fun NoteEntryScreen(
             { _, hour, minute ->
                 calendar.set(Calendar.HOUR_OF_DAY, hour)
                 calendar.set(Calendar.MINUTE, minute)
+                Log.d("NoteEntryScreen", "Selected time: ${calendar.timeInMillis}")
                 viewModel.updateHora(calendar.timeInMillis)
                 showTimePicker = false
             },
@@ -300,8 +245,8 @@ fun NoteEntryScreen(
             title = { Text("Select Multimedia") },
             text = {
                 MultimediaPicker { selectedUris ->
-                    val currentList = noteUiState.noteDetails?.multimediaUris ?: emptyList()
-                    viewModel.updateMultimediaUris(currentList + selectedUris)
+                    multimediaUris = selectedUris
+                    viewModel.updateMultimediaUris(selectedUris)
                 }
             },
             confirmButton = {
@@ -315,20 +260,13 @@ fun NoteEntryScreen(
     if (showCameraDialog) {
         AlertDialog(
             onDismissRequest = { showCameraDialog = false },
-            title = { Text("Cámara") },
+            title = { Text("Camera") },
             text = {
-                // Conectamos el botón de cámara (Foto/Video)
-                CameraButton(
-                    onMediaCaptured = { newPath ->
-                        val currentList = noteUiState.noteDetails?.multimediaUris ?: emptyList()
-                        viewModel.updateMultimediaUris(currentList + newPath)
-                        // Opcional: showCameraDialog = false si quieres que se cierre tras tomar 1 foto
-                    }
-                )
+                CameraButton()
             },
             confirmButton = {
                 Button(onClick = { showCameraDialog = false }) {
-                    Text("Cerrar")
+                    Text("Close")
                 }
             }
         )
@@ -339,17 +277,7 @@ fun NoteEntryScreen(
             onDismissRequest = { showAudioRecorderDialog = false },
             title = { Text("Audio Recorder") },
             text = {
-                AudioRecorderButton(
-                    existingAudioPaths = noteUiState.noteDetails?.multimediaUris ?: emptyList(),
-                    onAudioRecorded = { newPath ->
-                        val currentList = noteUiState.noteDetails?.multimediaUris ?: emptyList()
-                        viewModel.updateMultimediaUris(currentList + newPath)
-                    },
-                    onDeleteAudio = { pathToRemove ->
-                        val currentList = noteUiState.noteDetails?.multimediaUris ?: emptyList()
-                        viewModel.updateMultimediaUris(currentList - pathToRemove)
-                    }
-                )
+                AudioRecorderButton()
             },
             confirmButton = {
                 Button(onClick = { showAudioRecorderDialog = false }) {

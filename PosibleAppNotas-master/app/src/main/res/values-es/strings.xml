@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Notas</string>
+    <string name="attention">Atención</string>
+    <string name="back_button">Regresar</string>
+    <string name="delete">Eliminar</string>
+    <string name="delete_question">¿Estás seguro de que quieres borrar la nota?</string>
+    <string name="no_item_description">¡Uy!\nNo hay notas guardadas.\nToca + para añadir una.</string>
+    <string name="edit_item_title">Editar Nota</string>
+    <string name="item">Nota</string>
+    <string name="item_detail_title">Detalles de la Nota</string>
+    <string name="item_entry_title">Agregar Nota</string>
+    <string name="item_name_req">Título de la Nota*</string>
+    <string name="item_price_req">Precio*</string>
+    <string name="no">No</string>
+    <string name="price">Precio</string>
+    <string name="quantity_in_stock">Cantidad</string>
+    <string name="in_stock">%d en stock</string>
+    <string name="quantity_req">Cantidad*</string>
+    <string name="save_action">Guardar</string>
+    <string name="sell">Vender</string>
+    <string name="yes">Sí</string>
+    <string name="required_fields">*campos obligatorios</string>
+    <string name="add_note">Añadir Nota</string>
+    <string name="note_title">Título</string>
+    <string name="note_content">Contenido</string>
+    <string name="save_note">Guardar Nota</string>
+    <string name="note_detail_title">Detalles de la Nota</string>
+    <string name="note_not_found">Nota no encontrada</string>
+    <string name="note_entry_title">Agregar Nota</string>
+    <string name="note_edit_title">Editar Nota</string>
+</resources>
